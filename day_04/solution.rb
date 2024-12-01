@@ -1,14 +1,14 @@
 #!/usr/bin/env ruby
 
 def part1(input)
-  puts "Part 1\n======\n\n"
+  puts "Part 1\n======\n"
 end
 
 def part2(input)
-  puts "\nPart 2\n======\n\n"
+  puts "\nPart 2\n======\n"
 end
 
-input = File.readlines('input.txt').map { |number| number.to_i }
+input = File.readlines('input.txt')
 
-part1(input)
-part2(input)
+puts part1(input)
+puts part2(input)
