@@ -3,16 +3,12 @@
 require_relative '../lib/grid/grid_2d.rb'
 
 def turn_right(dir)
-  return Grid::DIRECTIONS[:e] if dir == Grid::DIRECTIONS[:n]
-  return Grid::DIRECTIONS[:s] if dir == Grid::DIRECTIONS[:e]
-  return Grid::DIRECTIONS[:w] if dir == Grid::DIRECTIONS[:s]
-
-  return Grid::DIRECTIONS[:n]
+  { n: :e, e: :s, s: :w, w: :n }[dir]
 end
 
 def mark_route(grid)
   loc = grid.find('^').first
-  dir = Grid::DIRECTIONS[:n]
+  dir = :n
 
   loop do
     grid[loc] = 'X'
@@ -42,30 +38,28 @@ def part2(file_contents)
 
   grid = Grid::Grid2D.new(file_contents)
   start_loc = grid.find('^').first
-  start_dir = Grid::DIRECTIONS[:n]
+  start_dir = :n
 
-  marked.find('X').count do |blockage|
-    next false if grid[blockage] != '.'
-
+  marked.find('X').reject { |x| x == start_loc }.count do |blockage|
     loc = start_loc
     dir = start_dir
-    turns = Hash.new { |h, k| h[k] = Set.new }
+    seen = Set.new
 
     loop do
-      new_loc = loc.move(dir)
-      break if turns[new_loc].include?(dir)
+      # Move to next blockage or edge of area
+      loop do
+        break if (n_loc = loc.move(dir)) == blockage || grid[n_loc] == '#' || grid[n_loc].nil?
 
-      while grid[new_loc] == '#' || new_loc == blockage
-        turns[new_loc] << dir
-        dir = turn_right(dir)
-        new_loc = loc.move(dir)
+        loc = n_loc
       end
 
-      loc = new_loc
-      break unless grid.in_bounds?(loc)
+      break if grid[loc.move(dir)].nil? || seen.include?(loc)
+
+      dir = turn_right(dir)
+      seen << loc unless (n_loc = loc.move(dir)) == blockage || grid[n_loc] == '#'
     end
 
-    grid.in_bounds?(loc)
+    seen.include?(loc)
   end
 end
 
