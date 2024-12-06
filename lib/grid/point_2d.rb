@@ -25,7 +25,8 @@ module Grid
     end
 
     def move(direction)
-      Point2D.new(x + direction[0], y + direction[1])
+      dx, dy = Grid::DIRECTIONS[direction]
+      Point2D.new(x + dx, y + dy)
     end
   end
 end
