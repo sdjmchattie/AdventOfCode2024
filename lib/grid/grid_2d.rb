@@ -1,9 +1,10 @@
 require_relative 'directions.rb'
+require_relative 'point_2d.rb'
 
 module Grid
   class Grid2D
     def initialize(contents_array)
-      @grid = contents_array.map { |line| line.chomp.split('') }
+      @grid = contents_array.map { |row| row.chomp.split('') }
     end
 
     def width
@@ -18,39 +19,54 @@ module Grid
       @grid.length
     end
 
-    def [](x, y)
-      return nil unless in_bounds?(x, y)
+    def [](point)
+      return nil unless in_bounds?(point)
 
-      @grid[y][x]
+      @grid[point.y][point.x]
     end
 
-    def []=(x, y, value)
-      return unless in_bounds?(x, y)
+    def []=(point, value)
+      return unless in_bounds?(point)
 
-      @grid[y][x] = value
+      @grid[point.y][point.x] = value
     end
 
-    def in_bounds?(x, y)
-      x >= 0 && x < width && y >= 0 && y < height
+    def count(char = nil)
+      return width * height if char.nil?
+
+      @grid.reduce(0) { |acc, row| acc + row.count { |e| e == char } }
     end
 
-    def adjacent_values(x, y)
-      DIRECTIONS.values.map do |dx, dy|
-        self[x + dx, y + dy]
+    def find(char)
+      @grid.each_with_index.flat_map do |row, y|
+        row.each_with_index.map do |c, x|
+          next if c != char
+
+          Point2D.new(x, y)
+        end
       end.compact
     end
 
-    def adjacent_values_in_direction(x, y, direction, including_self: false)
-      return [] unless self.in_bounds?(x, y)
+    def in_bounds?(point)
+      point.x >= 0 && point.x < width && point.y >= 0 && point.y < height
+    end
 
+    def adjacent_values(point)
+      DIRECTIONS.values.map do |dx, dy|
+        self[point.x + dx, point.y + dy]
+      end.compact
+    end
+
+    def adjacent_values_in_direction(point, direction, including_self: false)
+      return [] unless self.in_bounds?(point)
+
+      cur_point = Point2D.new(point.x, point.y)
       dx, dy = DIRECTIONS[direction]
-      values = including_self ? [self[x, y]] : []
+      values = including_self ? [self[cur_point]] : []
 
       loop do
-        x += dx
-        y += dy
-
-        value = self[x, y]
+        cur_point = Point2D.new(cur_point.x + dx, cur_point.y + dy)
+        value = self[cur_point]
         break if value.nil?
 
         values << value
