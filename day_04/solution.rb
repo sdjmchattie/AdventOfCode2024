@@ -9,7 +9,7 @@ def part1(input)
     input.height.times.sum do |y|
       next 0 unless input[x, y] == 'X'
 
-      DIRECTIONS.keys.count do |direction|
+      Grid::DIRECTIONS.keys.count do |direction|
         input.adjacent_values_in_direction(x, y, direction).join.start_with?('MAS')
       end
     end
