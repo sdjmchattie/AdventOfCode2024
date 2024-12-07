@@ -32,29 +32,67 @@ def part1(file_contents)
   marked.count('X')
 end
 
+def jumps_from_blockage(blockage, grid)
+  jumps = {}
+
+  [:n, :e, :s, :w].each do |dir|
+    turn_point = blockage.move(turn_right(dir))
+    dest = turn_point
+
+    while ['.', '^'].include?(grid[n_loc = dest.move(dir)])
+      dest = n_loc
+    end
+
+    next_to_blockage = turn_point == dest # No valid jump if turns into another blockage.
+    went_off_grid = grid[n_loc].nil?
+    jumps[turn_point] = dest unless next_to_blockage || went_off_grid
+  end
+
+  jumps
+end
+
 def part2(file_contents)
   puts "\nPart 2\n======\n"
   marked = mark_route(Grid::Grid2D.new(file_contents))
-
   grid = Grid::Grid2D.new(file_contents)
-  start_loc = grid.find('^').first
-  start_dir = :n
 
+  # Find jumps
+  jumps = {}
+  grid.find('#').each { |blockage| jumps.merge!(jumps_from_blockage(blockage, grid)) }
+
+  # Find starting point
+  start_loc = grid.find('^').first
+
+  # Only place blockages where the original path goes, except the starting point
   marked.find('X').reject { |x| x == start_loc }.count do |blockage|
+    # Create overrides for jumps with the new blockage
+    override_jumps = jumps_from_blockage(blockage, grid)
+    [:n, :e, :s, :w].each do |dir|
+      dest = blockage.move(dir) # The point at which you reach the blockage.
+      loc = dest # The current location while walking up to the blockage.
+      next if grid[loc] == '#'
+
+      adj_dir = turn_right(dir)
+      loc = loc.move(dir)
+      while ['.', '^'].include?(grid[loc])
+        adjacent = loc.move(adj_dir)
+        override_jumps[loc] = dest if grid[adjacent] == '#'
+        loc = loc.move(dir)
+      end
+    end
+
+    # Move to first blockage.
     loc = start_loc
-    dir = start_dir
+    until grid[n_loc = loc.move(:n)] == '#' || n_loc == blockage
+      loc = n_loc
+    end
+
+    jump_map = jumps.merge(override_jumps)
     seen = Set.new
 
-    loop do
-      # Move to next blockage or edge of area
-      until (n_loc = loc.move(dir)) == blockage || grid[n_loc] == '#' || grid[n_loc].nil?
-        loc = n_loc
-      end
-
-      break if grid[loc.move(dir)].nil? || seen.include?(loc)
-
-      dir = turn_right(dir)
-      seen << loc unless (n_loc = loc.move(dir)) == blockage || grid[n_loc] == '#'
+    until seen.include?(loc) || loc.nil?
+      seen << loc
+      loc = jump_map[loc]
     end
 
     seen.include?(loc)
