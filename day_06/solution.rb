@@ -47,9 +47,7 @@ def part2(file_contents)
 
     loop do
       # Move to next blockage or edge of area
-      loop do
-        break if (n_loc = loc.move(dir)) == blockage || grid[n_loc] == '#' || grid[n_loc].nil?
-
+      until (n_loc = loc.move(dir)) == blockage || grid[n_loc] == '#' || grid[n_loc].nil?
         loc = n_loc
       end
 
