@@ -7,6 +7,10 @@ module Grid
       @grid = contents_array.map { |row| row.chomp.split('') }
     end
 
+    def empty_dup
+      Grid2D.new(['.'.ljust(width)] * height)
+    end
+
     def width
       return 0 if @grid.empty?
 
@@ -29,6 +33,10 @@ module Grid
       return unless in_bounds?(point)
 
       @grid[point.y][point.x] = value
+    end
+
+    def all_chars
+      @grid.flatten.uniq.sort
     end
 
     def count(char = nil)
