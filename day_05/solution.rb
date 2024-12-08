@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'benchmark'
+
 class SparseArray
   def initialize(value_type, *value_args)
     @store = {}
@@ -33,7 +35,6 @@ def fix_order(rules, print_job)
 end
 
 def part1(rules, print_jobs)
-  puts "Part 1\n======\n"
   print_jobs.select { |job|
     pages_valid(rules, job)
   }.sum { |job|
@@ -42,7 +43,6 @@ def part1(rules, print_jobs)
 end
 
 def part2(rules, print_jobs)
-  puts "\nPart 2\n======\n"
   print_jobs.reject { |job|
     pages_valid(rules, job)
   }.map { |job|
@@ -64,5 +64,10 @@ order.each do |line|
   rules[before] << after
 end
 
-puts part1(rules, print_jobs)
-puts part2(rules, print_jobs)
+p1_result = nil
+p1_time = Benchmark.realtime { p1_result = part1(rules, print_jobs) } * 1000
+puts("Part 1 in #{p1_time.round(3)} ms\n  #{p1_result}\n\n")
+
+p2_result = nil
+p2_time = Benchmark.realtime { p2_result = part2(rules, print_jobs) } * 1000
+puts("Part 2 in #{p2_time.round(3)} ms\n  #{p2_result}\n\n")

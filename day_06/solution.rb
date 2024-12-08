@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'benchmark'
 require_relative '../lib/grid/grid_2d.rb'
 
 def turn_right(dir)
@@ -26,7 +27,6 @@ def mark_route(grid)
 end
 
 def part1(file_contents)
-  puts "Part 1\n======\n"
   marked = mark_route(Grid::Grid2D.new(file_contents))
 
   marked.count('X')
@@ -52,7 +52,6 @@ def jumps_from_blockage(blockage, grid)
 end
 
 def part2(file_contents)
-  puts "\nPart 2\n======\n"
   marked = mark_route(Grid::Grid2D.new(file_contents))
   grid = Grid::Grid2D.new(file_contents)
 
@@ -99,7 +98,12 @@ def part2(file_contents)
   end
 end
 
-file_contents = File.readlines('input.txt')
+input = File.readlines('input.txt')
 
-puts part1(file_contents)
-puts part2(file_contents)
+p1_result = nil
+p1_time = Benchmark.realtime { p1_result = part1(input) } * 1000
+puts("Part 1 in #{p1_time.round(3)} ms\n  #{p1_result}\n\n")
+
+p2_result = nil
+p2_time = Benchmark.realtime { p2_result = part2(input) } * 1000
+puts("Part 2 in #{p2_time.round(3)} ms\n  #{p2_result}\n\n")

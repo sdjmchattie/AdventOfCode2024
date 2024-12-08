@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'benchmark'
+
 def valid_equation?(eq, op_count)
   result = eq[0]
   components = eq[1]
@@ -26,12 +28,10 @@ def valid_equation?(eq, op_count)
 end
 
 def part1(equations)
-  puts "Part 1\n======\n"
   equations.reduce(0) { |acc, eq| acc + (valid_equation?(eq, 2) ? eq[0] : 0) }
 end
 
 def part2(equations)
-  puts "\nPart 2\n======\n"
   equations.reduce(0) { |acc, eq| acc + (valid_equation?(eq, 3) ? eq[0] : 0) }
 end
 
@@ -41,5 +41,10 @@ equations.each do |eq|
   eq[1] = eq[1].chomp.split(' ').map(&:to_i)
 end
 
-puts part1(equations)
-puts part2(equations)
+p1_result = nil
+p1_time = Benchmark.realtime { p1_result = part1(equations) } * 1000
+puts("Part 1 in #{p1_time.round(3)} ms\n  #{p1_result}\n\n")
+
+p2_result = nil
+p2_time = Benchmark.realtime { p2_result = part2(equations) } * 1000
+puts("Part 2 in #{p2_time.round(3)} ms\n  #{p2_result}\n\n")
