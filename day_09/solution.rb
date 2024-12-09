@@ -3,62 +3,35 @@
 require 'benchmark'
 
 def create_disk(input)
-  disk = [[0, input.shift]]
+  disk = [0] * input.shift
   file_id = 1
   while input.count > 0 do
-    disk << [-1, input.shift]
-    disk << [file_id, input.shift]
+    disk += [-1] * input.shift
+    disk += [file_id] * input.shift
     file_id += 1
   end
 
-  # Remove any zero length items.
-  disk.reject { |item| item[1] == 0 }
+  disk
 end
 
 def checksum(disk)
-  index = 0
-  sum = 0
-  while (item = disk.shift)
-    if item[0] == -1
-      index += item[1]
-      next
-    end
-
-    item[1].times do
-      sum += item[0] * index
-      index += 1
-    end
-  end
-
-  sum
+  disk.each_with_index.reduce(0) { |cs, (b, i)| cs + [0, b * i].max }
 end
 
 def part1(input)
   disk = create_disk(input.dup)
 
-  while disk.any? { |item| item[0] == -1 }
-    index = disk.index { |item| item[0] == -1 }
-    prior_item = disk[index - 1]
-    free_space = disk[index]
-    last_item = disk[-1]
+  gap_index = 0
+  data_index = disk.count - 1
 
-    # Reduce the free space; remove it if there's none left.
-    free_space[1] -= 1
-    disk.delete(free_space) if free_space[1] == 0
+  loop do
+    gap_index += 1 until disk[gap_index] == -1 || gap_index >= disk.count
+    data_index -= 1 while disk[data_index] == -1 || data_index < 0
 
-    # Increase the blocks consumed by the file; either increasing an existing area, or making a new one.
-    if prior_item[0] == last_item[0]
-      prior_item[1] += 1
-    else
-      disk.insert(index, [last_item[0], 1])
-    end
+    break if gap_index > data_index
 
-    # Reduce the blocks for the moved file at the end of the disk; remove it if there's none left.
-    last_item[1] -= 1
-    disk.delete(last_item) if last_item[1] == 0
-
-    # Delete the final blocks that only represent free space
-    disk = disk[0..-2] while disk[-1][0] == -1
+    disk[gap_index] = disk[data_index]
+    disk[data_index] = -1
   end
 
   checksum(disk)
@@ -66,39 +39,40 @@ end
 
 def part2(input)
   disk = create_disk(input.dup)
-  id = disk[-1][0]
 
-  while id >= 0 do
-    # Find item to move and a candidate space for it.
-    item_index = disk.index { |item| item[0] == id }
-    id -= 1
-    item_to_move = disk[item_index]
+  moved = Set.new
+  data_end = disk.count
+  while data_end >= 0
+    data_end -= 1
+    file_id = disk[data_end]
+    next if file_id == -1 || moved.include?(file_id)
 
-    space_before = disk[item_index - 1]
-    space_after = disk[item_index + 1]
-    space_before = nil if space_before[0] != -1
-    space_after = nil if space_after && space_after[0] != -1
+    moved << file_id
 
-    new_space_index = disk.index { |item| item[0] == -1 && item[1] >= item_to_move[1] }
+    data_start = data_end.downto(0).find { |index| disk[index] != file_id }
+    break if data_start.nil?
 
-    # Only move items left.
-    next if new_space_index.nil? || new_space_index > item_index
+    data_length = data_end - data_start
+    data_start += 1
+    data_end = data_start
 
-    space = disk[new_space_index]
+    space_start = 0
+    while space_start < data_start
+      space_start += 1
+      next unless disk[space_start] == -1
 
-    # Move the item.
-    disk.insert(new_space_index, item_to_move.dup)
-    space[1] -= item_to_move[1]
-    disk.delete(space) if space[1] == 0
+      space_end = (space_start...disk.count).find { |index| disk[index] != -1 }
+      break if space_end - space_start >= data_length
 
-    # Turn the item into space.
-    item_to_move[1] = [space_before, item_to_move, space_after].compact.sum { |item| item[1] }
-    item_to_move[0] = -1
-    disk.delete(space_before) unless space_before.nil?
-    disk.delete(space_after) unless space_after.nil?
+      space_start = space_end
+    end
 
-    # Delete the final blocks that only represent free space
-    disk = disk[0..-2] while disk[-1][0] == -1
+    next if space_start >= data_start
+
+    data_length.times do |index|
+      disk[data_start + index] = -1
+      disk[space_start + index] = file_id
+    end
   end
 
   checksum(disk)
