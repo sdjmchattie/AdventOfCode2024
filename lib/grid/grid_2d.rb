@@ -59,10 +59,11 @@ module Grid
       point.x >= 0 && point.x < width && point.y >= 0 && point.y < height
     end
 
-    def adjacent_values(point)
-      DIRECTIONS.values.map do |dx, dy|
-        self[point.x + dx, point.y + dy]
-      end.compact
+    def adjacent_points(point, dirs = nil)
+      dirs = DIRECTIONS.keys if dirs.nil?
+      dirs.map do |dir|
+        Point2D.new(point.x + DIRECTIONS[dir][0], point.y + DIRECTIONS[dir][1])
+      end.select { |adj_point| self.in_bounds?(adj_point) }
     end
 
     def adjacent_values_in_direction(point, direction, including_self: false)
