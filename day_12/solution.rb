@@ -50,10 +50,52 @@ def part1(map)
   costs
 end
 
-def part2(input)
+def sides(area, map)
+  label = map[area.first]
+  sides = 0
+
+  map.width.times do |x|
+    points_in_column = area.select { |point| point.x == x }
+
+    left_points = points_in_column.select { |point| map[point.move(:w)] != label }
+    sides += left_points.count { |point| !left_points.include?(point.move(:n)) }
+
+    right_points = points_in_column.select { |point| map[point.move(:e)] != label }
+    sides += right_points.count { |point| !right_points.include?(point.move(:n)) }
+  end
+
+  map.height.times do |y|
+    points_in_row = area.select { |point| point.y == y }
+
+    top_points = points_in_row.select { |point| map[point.move(:n)] != label }
+    sides += top_points.count { |point| !top_points.include?(point.move(:w)) }
+
+    bottom_points = points_in_row.select { |point| map[point.move(:s)] != label }
+    sides += bottom_points.count { |point| !bottom_points.include?(point.move(:w)) }
+  end
+
+  sides
 end
 
-input = File.readlines('example.txt')
+def part2(map)
+  costs = 0
+  seen = Set.new
+  map.width.times do |x|
+    map.height.times do |y|
+      point = Grid::Point2D.new(x, y)
+      next if seen.include?(point)
+
+      area = area_containing_point(point, map)
+      costs += sides(area, map) * area.count
+
+      seen += area
+    end
+  end
+
+  costs
+end
+
+input = File.readlines('input.txt')
 map = Grid::Grid2D.new(input)
 
 p1_result = nil
