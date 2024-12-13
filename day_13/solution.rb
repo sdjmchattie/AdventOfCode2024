@@ -3,7 +3,7 @@
 require 'benchmark'
 
 def part1(claws)
-  claws.map do |claw|
+  claws.sum do |claw|
     wins = []
     (0..100).each do |a|
       (0..100).each do |b|
@@ -13,10 +13,46 @@ def part1(claws)
       end
     end
     wins.min || 0
-  end.sum
+  end
 end
 
 def part2(claws)
+  claws.sum do |claw|
+    claw[4] += 10000000000000
+    claw[5] += 10000000000000
+
+    best = [1, 0]
+    (0..100).each do |a|
+      (0..100).each do |b|
+        x = a * claw[0] + b * claw[2]
+        y = a * claw[1] + b * claw[3]
+        if x == y and x > 0
+          tokens = a * 3 + b
+          best = [tokens, x] if x / tokens > best[1] / best[0]
+        end
+      end
+    end
+
+    next 0 if best[1] == 0
+
+    offset = 40000
+    init_steps = (10000000000000 - offset) / best[1]
+    init_cost = best[0] * init_steps
+    init_dist = best[1] * init_steps
+
+    extra_steps_a = [offset / claw[0], offset / claw[1]].max
+    extra_steps_b = [offset / claw[2], offset / claw[3]].max
+
+    wins = []
+    (0..100 + extra_steps_a).each do |a|
+      (0..100 + extra_steps_b).each do |b|
+        x = a * claw[0] + b * claw[2]
+        y = a * claw[1] + b * claw[3]
+        wins << a * 3 + b + init_cost if x == claw[4] - init_dist && y == claw[5] - init_dist
+      end
+    end
+    wins.min || 0
+  end
 end
 
 input = File.readlines('input.txt')
