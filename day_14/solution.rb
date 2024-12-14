@@ -18,27 +18,17 @@ def part1(robots, width, height)
 end
 
 def part2(robots, width, height)
-  File.open('tree_hunt.txt', 'w') do |f|
-    10000.times do |i|
-      next unless (i - 8) % 101 == 0 || (i - 78) % 103 == 0
+  100000.times do |i|
+    plot = height.times.map { |_| ['.'] * width }
 
-      plot = height.times.map { |_| ['.'] * width }
-      robots.each do |r|
-        x = (r[0] + r[2] * i) % width
-        y = (r[1] + r[3] * i) % height
-        plot[y][x] = '#'
-      end
-
-      f.puts "After #{i} seconds:"
-      plot.each do |row|
-        f.puts row.join
-      end
-      f.puts
-      f.puts
+    robots.each do |r|
+      x = (r[0] + r[2] * i) % width
+      y = (r[1] + r[3] * i) % height
+      plot[y][x] = '#'
     end
-  end
 
-  "Check the file tree_hunt.txt!"
+    break i if plot.any? { |line| line.join.include? '###########' }
+  end
 end
 
 input = File.readlines('input.txt')
