@@ -7,6 +7,14 @@ module Grid
       @grid = contents_array.map { |row| row.chomp.split('') }
     end
 
+    def to_s
+      @grid.map(&:join).join("\n")
+    end
+
+    def inspect
+      "<Grid2D width=#{width} height=#{height}>\n#{to_s}"
+    end
+
     def empty_dup
       Grid2D.new(['.'.ljust(width)] * height)
     end

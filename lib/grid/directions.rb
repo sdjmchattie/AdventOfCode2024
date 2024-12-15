@@ -9,4 +9,19 @@ module Grid
     sw: [-1, 1],
     nw: [-1, -1]
   }
+
+  UDLR = [:n, :e, :s, :w]
+
+  def opp_dir(dir)
+    {
+      n: :s,
+      e: :w,
+      s: :n,
+      w: :e,
+      ne: :sw,
+      se: :nw,
+      sw: :ne,
+      nw: :se
+    }[dir]
+  end
 end
