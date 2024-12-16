@@ -12,7 +12,25 @@ module Grid
 
   UDLR = [:n, :e, :s, :w]
 
-  def opp_dir(dir)
+  def self.turn_left(dir)
+    {
+      n: :w,
+      w: :s,
+      s: :e,
+      e: :n
+    }[dir]
+  end
+
+  def self.turn_right(dir)
+    {
+      n: :e,
+      e: :s,
+      s: :w,
+      w: :n
+    }[dir]
+  end
+
+  def self.opp_dir(dir)
     {
       n: :s,
       e: :w,
