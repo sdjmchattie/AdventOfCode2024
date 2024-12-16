@@ -3,51 +3,56 @@
 require 'benchmark'
 require_relative '../lib/grid/grid_2d.rb'
 
-def lowest_score_to_end(map)
+def valid_dirs(loc, dir, map)
+  {
+    loc.move(dir) => [dir, 1],
+    loc.move(Grid::turn_left(dir)) => [Grid::turn_left(dir), 1001],
+    loc.move(Grid::turn_right(dir)) => [Grid::turn_right(dir), 1001]
+  }.reject { |new_loc, _| map[new_loc] == '#' }.values
+end
+
+def lowest_scores_to_end(map)
   start = map.find('S').first
   goal = map.find('E').first
-  unvisited = Set.new(map.find('.') + [start, goal])
-  scores = Hash.new { |h, k| h[k] = Hash.new(10**9) }
-  scores[start] = { e: 0 }
+  unvisited = Set.new((map.find('.') + [goal]).product(Grid::UDLR))
+  data = Hash.new { |h, k| h[k] = { score: 10**9, path: Set.new } }
+  valid_dirs(start, :e, map).each { |dir, cost| data[[start, dir]] = { score: cost, path: Set.new([start]) } }
 
-  loc = start
-  dir = :e
+  loc, dir = data.keys.select { |l, _| l == start }.min_by { |k| data[k][:score] }
   until loc == goal
-    score = scores[loc][dir]
+    new_loc = loc.move(dir)
+    valid_dirs(new_loc, dir, map).each do |new_dir, cost|
+      if data[[new_loc, new_dir]][:score] == data[[loc, dir]][:score] + cost
+        data[[new_loc, new_dir]][:path] += data[[loc, dir]][:path].dup.add(new_loc)
+      elsif data[[new_loc, new_dir]][:score] > data[[loc, dir]][:score] + cost
+        data[[new_loc, new_dir]][:score] = data[[loc, dir]][:score] + cost
+        data[[new_loc, new_dir]][:path] = data[[loc, dir]][:path].dup.add(new_loc)
+      end
+    end
 
-    forward = loc.move(dir)
-    scores[forward][dir] = [scores[forward][dir], score + 1].min unless map[forward] == '#'
+    return { score: data[[loc, dir]][:score], path: data[[loc, dir]][:path] + [goal] } if new_loc == goal
 
-    left_dir = Grid::turn_left(dir)
-    left_loc = loc.move(left_dir)
-    scores[left_loc][left_dir] = [scores[left_loc][left_dir], score + 1001].min unless map[left_loc] == '#'
+    unvisited.delete([loc, dir])
 
-    right_dir = Grid::turn_right(dir)
-    right_loc = loc.move(right_dir)
-    scores[right_loc][right_dir] = [scores[right_loc][right_dir], score + 1001].min unless map[right_loc] == '#'
-
-    unvisited.delete(loc)
-
-    loc = unvisited.min_by { |e| scores[e].values.min || 10**9 }
-    dir = scores[loc].key(scores[loc].values.min)
+    loc, dir = data.keys.select { |k| unvisited.include?(k) }.min_by { |k| data[k][:score] }
   end
-
-  scores[goal].values.min
 end
 
-def part1(map)
-  lowest_score_to_end(map)
+def part1(result)
+  result[:score]
 end
 
-def part2(map)
+def part2(result)
+  result[:path].count
 end
 
-input = File.readlines('input.txt')
+input = File.readlines('example.txt')
+result = lowest_scores_to_end(Grid::Grid2D.new(input))
 
 p1_result = nil
-p1_time = Benchmark.realtime { p1_result = part1(Grid::Grid2D.new(input)) } * 1000
+p1_time = Benchmark.realtime { p1_result = part1(result) } * 1000
 puts("Part 1 in #{p1_time.round(3)} ms\n  #{p1_result}\n\n")
 
 p2_result = nil
-p2_time = Benchmark.realtime { p2_result = part2(Grid::Grid2D.new(input)) } * 1000
+p2_time = Benchmark.realtime { p2_result = part2(result) } * 1000
 puts("Part 2 in #{p2_time.round(3)} ms\n  #{p2_result}\n\n")
