@@ -7,7 +7,7 @@ def min_path_length(grid, start, goal)
   unvisited = Set.new
   (0...grid.width).each do |x|
     (0...grid.height).each do |y|
-      unvisited << Grid::Point2D.new(x, y)
+      unvisited << [x, y]
     end
   end
   costs = Hash.new { |h, k| h[k] = 10**9 }
@@ -15,8 +15,8 @@ def min_path_length(grid, start, goal)
 
   current = start
   while current != goal
-    grid.adjacent_points(current, Grid::UDLR).each do |adjacent|
-      next unless unvisited.include?(adjacent) && grid[adjacent] != '#'
+    grid.adjacent_coords(current, Grid::UDLR).each do |adjacent|
+      next unless unvisited.include?(adjacent) && grid[adjacent[0], adjacent[1]] != '#'
 
       costs[adjacent] = [costs[adjacent], costs[current] + 1].min
     end
@@ -29,8 +29,8 @@ def min_path_length(grid, start, goal)
 end
 
 def part1(memory, corruption_points)
-  corruption_points[...1024].each { |point| memory[point] = '#' }
-  min_path_length(memory, Grid::Point2D.new(0, 0), Grid::Point2D.new(memory.width - 1, memory.height - 1))
+  corruption_points[...1024].each { |x, y| memory[x, y] = '#' }
+  min_path_length(memory, [0, 0], [memory.width - 1, memory.height - 1])
 end
 
 def part2(memory, corruption_points)
@@ -39,8 +39,8 @@ def part2(memory, corruption_points)
   while lowest + 1 != highest
     current = (lowest + highest) / 2
     memcpy = memory.empty_dup
-    corruption_points[..current].each { |point| memcpy[point] = '#' }
-    mpl = min_path_length(memcpy, Grid::Point2D.new(0, 0), Grid::Point2D.new(memcpy.width - 1, memcpy.height - 1))
+    corruption_points[..current].each { |x, y| memcpy[x, y] = '#' }
+    mpl = min_path_length(memcpy, [0, 0], [memcpy.width - 1, memcpy.height - 1])
     if mpl < 10**9
       lowest = current
     else
@@ -48,13 +48,13 @@ def part2(memory, corruption_points)
     end
   end
 
-  "#{corruption_points[highest].x},#{corruption_points[highest].y}"
+  corruption_points[highest].join(',')
 end
 
 input = File.readlines('input.txt')
-points = input.map { |line| line.scan(/\d+/) }.map { |x, y| Grid::Point2D.new(x.to_i, y.to_i) }
-width = points.map(&:x).max + 1
-height = points.map(&:y).max + 1
+points = input.map { |line| line.scan(/\d+/).map(&:to_i) }
+width = points.map(&:first).max + 1
+height = points.map(&:last).max + 1
 memory = Grid::Grid2D.new(width:, height:)
 
 p1_result = nil

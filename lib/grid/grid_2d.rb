@@ -37,16 +37,25 @@ module Grid
       @grid.length
     end
 
-    def [](point)
-      return nil unless in_bounds?(point)
+    def parse_coords(point_or_x, y)
+      return point_or_x.x, point_or_x.y if point_or_x.instance_of?(Point2D)
+      return point_or_x, y if y.kind_of?(Numeric)
 
-      @grid[point.y][point.x]
+      raise 'Argument types are invalid'
     end
 
-    def []=(point, value)
-      return unless in_bounds?(point)
+    def [](point_or_x, y = nil)
+      x, y = parse_coords(point_or_x, y)
+      return nil unless in_bounds?(x, y)
 
-      @grid[point.y][point.x] = value
+      @grid[y][x]
+    end
+
+    def []=(point_or_x, y = nil, value)
+      x, y = parse_coords(point_or_x, y)
+      return unless in_bounds?(x, y)
+
+      @grid[y][x] = value
     end
 
     def all_chars
@@ -69,15 +78,21 @@ module Grid
       end.compact
     end
 
-    def in_bounds?(point)
-      point.x >= 0 && point.x < width && point.y >= 0 && point.y < height
+    def in_bounds?(point_or_x, y = nil)
+      x, y = parse_coords(point_or_x, y)
+
+      x >= 0 && x < width && y >= 0 && y < height
+    end
+
+    def adjacent_coords((x, y), dirs = nil)
+      dirs = DIRECTIONS.keys if dirs.nil?
+      dirs.map do |dir|
+        [x + DIRECTIONS[dir][0], y + DIRECTIONS[dir][1]]
+      end.select { |adj| self.in_bounds?(adj[0], adj[1]) }
     end
 
     def adjacent_points(point, dirs = nil)
-      dirs = DIRECTIONS.keys if dirs.nil?
-      dirs.map do |dir|
-        Point2D.new(point.x + DIRECTIONS[dir][0], point.y + DIRECTIONS[dir][1])
-      end.select { |adj_point| self.in_bounds?(adj_point) }
+      adjacent_coords([point.x, point.y], dirs).map { |coord| Point2D.new(coord[0], coord[1]) }
     end
 
     def adjacent_values_in_direction(point, direction, including_self: false)
