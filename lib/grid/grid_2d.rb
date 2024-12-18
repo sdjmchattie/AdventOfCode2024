@@ -3,8 +3,14 @@ require_relative 'point_2d.rb'
 
 module Grid
   class Grid2D
-    def initialize(contents_array)
-      @grid = contents_array.map { |row| row.chomp.split('') }
+    def initialize(contents_array = nil, width: 0, height: 0)
+      if contents_array
+        @grid = contents_array.map { |row| row.chomp.split('') }
+      elsif width > 0 && height > 0
+        @grid = Array.new(height) { ['.'] * width }
+      else
+        raise 'Invalid initialization arguments.'
+      end
     end
 
     def to_s
@@ -12,11 +18,11 @@ module Grid
     end
 
     def inspect
-      "<Grid2D width=#{width} height=#{height}>\n#{to_s}"
+      "<Grid2D width=#{width} height=#{height}>\n#{self}"
     end
 
     def empty_dup
-      Grid2D.new(['.'.ljust(width)] * height)
+      Grid2D.new(width:, height:)
     end
 
     def width
