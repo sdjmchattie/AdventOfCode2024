@@ -86,13 +86,14 @@ module Grid
 
     def adjacent_coords((x, y), dirs = nil)
       dirs = DIRECTIONS.keys if dirs.nil?
+      dirs = [dirs] unless dirs.kind_of?(Enumerable)
       dirs.map do |dir|
         [x + DIRECTIONS[dir][0], y + DIRECTIONS[dir][1]]
       end.select { |adj| self.in_bounds?(adj[0], adj[1]) }
     end
 
     def adjacent_points(point, dirs = nil)
-      adjacent_coords([point.x, point.y], dirs).map { |coord| Point2D.new(coord[0], coord[1]) }
+      adjacent_coords([point.x, point.y], dirs).map { |coord| Point2D.new(*coord) }
     end
 
     def adjacent_values_in_direction(point, direction, including_self: false)
