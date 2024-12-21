@@ -2,97 +2,122 @@
 
 require 'benchmark'
 
-# Numeric Keypad:
-# +---+---+---+
-# | 7 | 8 | 9 |
-# +---+---+---+
-# | 4 | 5 | 6 |
-# +---+---+---+
-# | 1 | 2 | 3 |
-# +---+---+---+
-#     | 0 | A |
-#     +---+---+
+NUM_PAD = [
+  ['7', '8', '9'],
+  ['4', '5', '6'],
+  ['1', '2', '3'],
+  [' ', '0', 'A']
+].freeze
 
-NUMERIC_LAYOUT = {
-  '7' => [0, 0],
-  '8' => [1, 0],
-  '9' => [2, 0],
-  '4' => [0, 1],
-  '5' => [1, 1],
-  '6' => [2, 1],
-  '1' => [0, 2],
-  '2' => [1, 2],
-  '3' => [2, 2],
-  ' ' => [0, 3],
-  '0' => [1, 3],
-  'A' => [2, 3]
-}.freeze
+DIR_PAD = [
+  [' ', '^', 'A'],
+  ['<', 'v', '>']
+].freeze
 
-# Directional Keypad:
-#     +---+---+
-#     | ^ | A |
-# +---+---+---+
-# | < | v | > |
-# +---+---+---+
+def moves_between(sx, sy, gx, gy, pad)
+  optimal = 1000
+  moves = []
+  queue = [[sx, sy, '']]
+  return ['A'] if sx == gx && sy == gy
 
-DIRECTIONAL_LAYOUT = {
-  ' ' => [0, 0],
-  '^' => [1, 0],
-  'A' => [2, 0],
-  '<' => [0, 1],
-  'v' => [1, 1],
-  '>' => [2, 1]
-}.freeze
+  until queue.empty?
+    x, y, m = queue.shift
+    [[0, 1, 'v'], [0, -1,'^'], [1, 0, '>'], [-1, 0, '<']].each do |dx, dy, dm|
+      nx = x + dx
+      ny = y + dy
+      next if nx < 0 || nx >= pad[0].length || ny < 0 || ny >= pad.length
+      next if pad[ny][nx] == ' '
 
-def move_col(from, to)
-  { -2 => '<<', -1 => '<', 0 => '', 1 => '>', 2 => '>>' }[to[0] - from[0]]
-end
+      nm = m + dm
+      return moves if nm.length > optimal
 
-def move_row(from, to)
-  { -3 => '^^^', -2 => '^^', -1 => '^', 0 => '', 1 => 'v', 2 => 'vv', 3 => 'vvv' }[to[1] - from[1]]
-end
+      if nx == gx && ny == gy
+        optimal = nm.length
+        moves << nm + 'A'
+      end
 
-def keypad_path(from, to, layout)
-  from_coord = layout[from]
-  to_coord = layout[to]
-  blank = layout[' ']
-
-  row_first = from_coord[1] == blank[1] && to_coord[0] == blank[0]
-  row_first ?
-    move_row(from_coord, to_coord) + move_col(from_coord, to_coord) :
-    move_col(from_coord, to_coord) + move_row(from_coord, to_coord)
-end
-
-def part1(input)
-  input.sum do |line|
-    # Numeric pad
-    num_seq = line.chomp.split('')
-    dirs = num_seq.each_with_index.map do |to, i|
-      from = num_seq[i - 1]
-      keypad_path(from, to, NUMERIC_LAYOUT) + 'A'
-    end.join.split('')
-
-    # Directional pads
-    2.times do
-      dirs = dirs.each_with_index.map do |to, i|
-        from = dirs[i - 1]
-        keypad_path(from, to, DIRECTIONAL_LAYOUT) + 'A'
-      end.join.split('')
+      queue << [nx, ny, nm]
     end
-
-    line[..-1].to_i * dirs.count
   end
 end
 
-def part2(input)
+def calculate_moves(pad)
+  keys = pad.each_with_index.flat_map do |row, y|
+    row.each_with_index.map do |key, x|
+      [key, x, y]
+    end
+  end
+
+  keys.map do |sk, sx, sy|
+    next if sk == ' '
+
+    [
+      sk,
+      keys.map do |gk, gx, gy|
+        next if gk == ' '
+
+        [
+          gk,
+          moves_between(sx, sy, gx, gy, pad)
+        ]
+      end.compact.to_h
+    ]
+  end.compact.to_h
+end
+
+NUMPAD_MOVES = calculate_moves(NUM_PAD)
+DIRPAD_MOVES = calculate_moves(DIR_PAD)
+
+CACHE = {}
+
+def compute_length(seq, depth = 1)
+  return CACHE[[seq, depth]] unless CACHE[[seq, depth]].nil?
+
+  if depth == 1
+    CACHE[[seq, depth]] = seq.each_with_index.sum do |to, i|
+      from = seq[i - 1]
+      DIRPAD_MOVES[from][to][0].length
+    end
+
+    return CACHE[[seq, depth]]
+  end
+
+  CACHE[[seq, depth]] = seq.each_with_index.sum do |to, i|
+    from = seq[i - 1]
+    DIRPAD_MOVES[from][to].map { |subseq| compute_length(subseq.split(''), depth - 1) }.min
+  end
+end
+
+def part1(dir_seqs)
+  dir_seqs.sum do |val, sub_seqs|
+    val * sub_seqs.map { |seq| compute_length(seq.split(''), 2) }.min
+  end
+end
+
+def part2(dir_seqs)
+  dir_seqs.sum do |val, sub_seqs|
+    val * sub_seqs.map { |seq| compute_length(seq.split(''), 25) }.min
+  end
 end
 
 input = File.readlines('input.txt')
 
+dir_seqs = input.map do |line|
+  num_seq = line.chomp.split('')
+  dir_seqs = num_seq.each_with_index.map do |to, i|
+    from = num_seq[i - 1]
+    NUMPAD_MOVES[from][to]
+  end.reduce(['']) do |acc, move|
+    acc.product(move).map(&:join)
+  end
+  min_seq = dir_seqs.map(&:length).min
+  [line[..-1].to_i, dir_seqs.select { |nseq| nseq.length == min_seq }]
+end
+
 p1_result = nil
-p1_time = Benchmark.realtime { p1_result = part1(input) } * 1000
+p1_time = Benchmark.realtime { p1_result = part1(dir_seqs) } * 1000
 puts("Part 1 in #{p1_time.round(3)} ms\n  #{p1_result}\n\n")
 
 p2_result = nil
-p2_time = Benchmark.realtime { p2_result = part2(input) } * 1000
+p2_time = Benchmark.realtime { p2_result = part2(dir_seqs) } * 1000
 puts("Part 2 in #{p2_time.round(3)} ms\n  #{p2_result}\n\n")
