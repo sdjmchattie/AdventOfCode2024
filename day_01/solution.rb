@@ -13,7 +13,8 @@ end
 def part2(input)
   left, right = input.transpose
 
-  left.map { |l| l * right.count { |r| r == l } }.sum
+  right_counts = right.group_by(&:itself).transform_values(&:count)
+  left.map { |l| l * right_counts.fetch(l, 0) }.sum
 end
 
 input = File.readlines('input.txt').map { |line| line.split.map(&:to_i) }
